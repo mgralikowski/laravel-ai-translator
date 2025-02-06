@@ -29,11 +29,14 @@ class AIProvider
     }
 
     protected function verify(array $list): void {
-        $sourceKeys = collect($this->strings)->keys()->unique()->sort()->values()->toArray();
-        $resultKeys = collect($list)->pluck('key')->unique()->sort()->values()->toArray();
+        $sourceKeys = collect($this->strings)->keys()->unique()->sort()->values();
+        $resultKeys = collect($list)->pluck('key')->unique()->sort()->values();
 
-        if ($sourceKeys !== $resultKeys) {
-            throw new VerifyFailedException("Failed to translate the string. The keys are not matched. (Source: " . implode(', ', $sourceKeys) . ") (Result: " . implode(', ', $resultKeys) . ")");
+        $diff = $sourceKeys->diff($resultKeys);
+
+        if ($diff->count() > 0) {
+//            \Log::error("Failed to translate the string. The keys are not matched. (Diff: {$diff->implode(', ')})");
+            throw new VerifyFailedException("Failed to translate the string. The keys are not matched. (Diff: {$diff->implode(', ')})");
         }
 
         foreach ($list as $item) {
@@ -53,7 +56,7 @@ class AIProvider
         $replaces = array_merge($replaces, [
             'sourceLanguage' => $this->sourceLanguage,
             'targetLanguage' => $this->targetLanguage,
-            'additionalRules' => sizeof($this->additionalRules) > 0 ? "\nSpecial rules for {$this->targetLanguage}\n- " . implode("\n- ", $this->additionalRules) : '',
+            'additionalRules' => sizeof($this->additionalRules) > 0 ? "\nSpecial rules for {$this->targetLanguage}:\n" . implode("\n", $this->additionalRules) : '',
         ]);
 
         foreach ($replaces as $key => $value) {
@@ -71,7 +74,24 @@ class AIProvider
             'targetLanguage' => $this->targetLanguage,
             'filename' => $this->filename,
             'parentKey' => basename($this->filename, '.php'),
-            'strings' => collect($this->strings)->map(fn($string, $key) => "  - `{$key}`: \"\"\"{$string}\"\"\"")->implode("\n"),
+            'keys' => collect($this->strings)->keys()->implode("`, `"),
+            'strings' => collect($this->strings)->map(function ($string, $key) {
+                if (is_string($string)) {
+                    return "  - `{$key}`: \"\"\"{$string}\"\"\"";
+                } else {
+                    $text = "  - `{$key}`: \"\"\"{$string['text']}\"\"\"";
+                    if (isset($string['context'])) {
+                        $text .= "\n    - Context: \"\"\"{$string['context']}\"\"\"";
+                    }
+                    if (isset($string['references']) && sizeof($string['references']) > 0) {
+                        $text .= "\n    - References:";
+                        foreach ($string['references'] as $locale => $items) {
+                            $text .= "\n      - {$locale}: \"\"\"" . $items . "\"\"\"";
+                        }
+                    }
+                    return $text;
+                }
+            })->implode("\n"),
         ]);
 
         foreach ($replaces as $key => $value) {
@@ -121,7 +141,7 @@ class AIProvider
 
         // Fix Parent key issue
         $parentKey = basename($this->filename, '.php');
-        foreach($result as $item) {
+        foreach ($result as $item) {
             if (str_starts_with($item->key, $parentKey)) {
                 $item->key = str_replace($parentKey . '.', '', $item->key);
             }
@@ -147,9 +167,11 @@ class AIProvider
                 \Log::error($e->getMessage());
             } catch (VerifyFailedException $e) {
                 \Log::error($e->getMessage());
+            } catch (\Exception $e) {
+                \Log::critical($e->getMessage());
             }
         } while (++$tried <= $this->configRetries);
 
-        throw new VerifyFailedException('Failed to translate the string after ' . ($tried + 1) . ' retries. If you run the command again, it will try to translate the strings starting from the failed one.');
+        throw new VerifyFailedException('Failed to translate the string after ' . ($tried - 1) . ' retries. If you run the command again, it will try to translate the strings starting from the failed one.');
     }
 }

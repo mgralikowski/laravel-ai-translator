@@ -2,6 +2,10 @@
 
 AI-powered translation tool for Laravel language files
 
+## 💡 New Feature: Custom Language Styles
+
+We've expanded our capabilities with support for custom language styles, allowing for unique and creative translations. [Learn more about Custom Language Styles](#custom-language-styles)
+
 ## Overview
 
 Laravel AI Translator is a powerful tool designed to streamline the localization process in Laravel projects. It automates the tedious task of translating strings across multiple languages, leveraging advanced AI models to provide high-quality, context-aware translations.
@@ -25,9 +29,8 @@ Whether you're working on a personal project or a large-scale application, Larav
 - Supports custom translation rules for enhanced quality and project-specific requirements
 - Efficiently processes large language files, saving time and effort
 - Respects Laravel's localization system, ensuring compatibility with your existing setup
-- **NEW**: Chunking functionality for cost-effective translations: Processes multiple strings in a single AI request, significantly reducing API costs and improving efficiency
-- **NEW**: String validation to ensure translation accuracy: Automatically checks and validates AI translations to catch and correct any errors or mistranslations
-- **NEW**: Support for Laravel 11: Now compatible with the latest Laravel version for cutting-edge projects
+- Chunking functionality for cost-effective translations: Processes multiple strings in a single AI request, significantly reducing API costs and improving efficiency
+- String validation to ensure translation accuracy: Automatically checks and validates AI translations to catch and correct any errors or mistranslations
 
 Also, this tool is designed to translate your language files intelligently:
 
@@ -38,6 +41,44 @@ Also, this tool is designed to translate your language files intelligently:
 - Tone Consistency: Maintains a consistent tone across translations, customizable via configuration.
 
 Do you want to know how this works? See the prompt in `src/AI`.
+
+## Custom Language Styles
+
+In addition to standard language translations, this package now supports custom language styles, allowing for unique and creative localizations.
+
+### Built-in Styles
+The package includes several built-in language styles:
+- `ko_kp`: North Korean style Korean
+- Various regional dialects and language variants
+
+These are automatically available and don't require additional configuration.
+
+### Custom Style Example: Reddit English
+As an demonstration of custom styling capabilities, we've implemented a "Reddit style" English:
+
+This style mimics the casual, often humorous language found on Reddit, featuring:
+- Liberal use of sarcasm
+- Internet slang and meme references
+- Playful skepticism
+
+Example configuration:
+```php
+'locale_names' => [
+    'en_reddit' => 'English (Reddit)',
+],
+'additional_rules' => [
+    'en_reddit' => [
+        "- Incorporate sarcasm and exaggeration",
+        "- Use popular internet slang and meme references",
+        "- Add humorous calls for sources on obvious statements",
+    ],
+],
+```
+
+### Creating Custom Styles
+You can create your own custom language styles by adding new entries to the `locale_names` and `additional_rules` in the configuration. This allows you to tailor translations to specific audiences or platforms.
+
+These custom styles offer creative ways to customize your translations, adding a unique flair to your localized content. Use responsibly to enhance user engagement while maintaining clarity and appropriateness for your audience.
 
 ## Prerequisites
 
@@ -145,6 +186,22 @@ The package will generate translations like these:
       'notifications.refresh_after_1_min' => 'รีเฟรชหลังจาก 1 นาที จะมีเนื้อหาใหม่ให้ดู! (โมเดลก่อนหน้า: :model, อัปเดตเมื่อ: :updated_at)',
     );
     ```
+- 🤣 Korean (North Korea):
+    ```php
+    <?php
+    return array (
+      'notifications.new_feature_search_sentence' => '혁명적 새로운 기능: 동무들! 이제 단어뿐만 아니라 문장도 입력하여 단어의 력사를 확인할 수 있습니다. 모국어로도 괜찮습니다. 인공지능이 중국어로 번역해드리겠습니다.',
+      'notifications.refresh_after_1_min' => '1분후에 새로고침하십시요. 새로운 내용을 볼수 있습니다! (이전 모델: :model, 갱신: :updated_at)',
+    );
+    ```
+- 🤣 English (Reddit):
+    ```php
+    <?php
+    return array (
+      'notifications.new_feature_search_sentence' => 'Whoa, hold onto your keyboards, nerds! We\'ve leveled up our search game. Now you can type entire sentences, not just measly words. Mind. Blown. And get this - it even works in your weird non-English languages! Our AI overlord will graciously translate your gibberish into Chinese. You\'re welcome.',
+      'notifications.refresh_after_1_min' => 'Yo, hit that F5 in 60 seconds, fam. Fresh content incoming! (Previous model was :model, last updated when dinosaurs roamed the Earth at :updated_at)',
+    );
+    ```
 
 ## Configuration
 
@@ -156,11 +213,7 @@ php artisan vendor:publish --provider="Kargnas\LaravelAiTranslator\ServiceProvid
 
 This will create a `config/ai-translator.php` file where you can modify the following settings:
 
-- `source_locale`: Change this to your default language in the Laravel project. The package will translate from this language.
-
 - `source_directory`: If you use a different directory for language files instead of the default `lang` directory, you can specify it here.
-
-- `chunk_size`: Set the number of strings to be translated in a single AI request. Higher values can significantly reduce API costs but may impact translation quality for very large chunks. Default is 10.
 
 - `ai`: Configure the AI provider, model, and API key here. Here are our recommendation for the best models:
 
@@ -182,7 +235,7 @@ This will create a `config/ai-translator.php` file where you can modify the foll
 
 - `locale_names`: This mapping of locale codes to language names enhances translation quality by providing context to the AI.
 
-- `additional_rules`: Add custom rules to the translation prompt. This is useful for customizing the style of the messages.
+- `additional_rules`: Add custom rules to the translation prompt. This is useful for customizing the style of the messages or creating entirely new language styles.
 
 Example configuration:
 
@@ -190,9 +243,7 @@ Example configuration:
 <?php
 
 return [
-    'source_locale' => 'en',
     'source_directory' => 'lang',
-    'chunk_size' => 10,
 
     'ai' => [
         'provider' => 'openai', // or 'anthropic'
